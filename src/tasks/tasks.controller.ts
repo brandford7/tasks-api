@@ -32,12 +32,16 @@ export class TasksController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   async findAll(
     @Req() req: JwtRequest,
     @Query() query: TaskQueryDto,
-  ): Promise<Task[]> {
+  ): Promise<{
+    data: Task[];
+    meta: { total: number; limit: number; offset: number };
+  }> {
     const { userId, role } = req.user;
-    return this.tasksService.findAll(userId, role, query);
+    return this.tasksService.findAll({ userId, role }, query);
   }
 
   @Get(':id')

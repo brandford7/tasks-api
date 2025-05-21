@@ -25,46 +25,65 @@ export class TasksService {
     return this.taskRepo.save(task);
   }
 
+  // src/tasks/tasks.service.ts
+
   async findAll(
-    userId: string,
-    role: string,
+    user: { userId: string; role: string },
     query: TaskQueryDto,
-  ): Promise<Task[]> {
-    const qb = this.taskRepo
-      .createQueryBuilder('task')
-      .leftJoinAndSelect('task.user', 'user');
+  ): Promise<{
+    data: Task[];
+    meta: { total: number; limit: number; offset: number };
+  }> {
+    const {
+      search,
+      status,
+      includeCompleted,
+      sortByCreatedAt,
+      limit = 10,
+      offset = 0,
+    } = query;
 
-    // Restrict to user's own tasks if not admin
-    if (role !== 'admin') {
-      qb.where('user.id = :userId', { userId });
+    const qb = this.taskRepo.createQueryBuilder('task');
+
+    // Only admin can see all tasks
+    if (user.role !== 'admin') {
+      qb.andWhere('task.userId = :userId', { userId: user.userId });
     }
 
-    // Search by title or description
-    if (query.search) {
-      qb.andWhere(
-        '(task.title ILIKE :search OR task.description ILIKE :search)',
-        { search: `%${query.search}%` },
-      );
+    if (search) {
+      qb.andWhere('LOWER(task.title) LIKE LOWER(:search)', {
+        search: `%${search}%`,
+      });
     }
 
-    // Filter by status
-    if (query.status) {
-      qb.andWhere('task.status = :status', { status: query.status });
+    if (status) {
+      qb.andWhere('task.status = :status', { status });
     }
 
-    // Filter out completed tasks unless explicitly included
-    if (!query.includeCompleted) {
+    if (includeCompleted === 'false') {
       qb.andWhere('task.isCompleted = false');
+    } else if (includeCompleted === 'true') {
+      // nothing to filter
     }
 
-    // Sort by createdAt
-    if (query.sortByCreatedAt) {
-      qb.orderBy('task.createdAt', query.sortByCreatedAt);
+    if (sortByCreatedAt) {
+      qb.orderBy('task.createdAt', sortByCreatedAt);
     } else {
-      qb.orderBy('task.createdAt', 'DESC'); // Default sorting
+      qb.orderBy('task.createdAt', 'DESC'); // default
     }
 
-    return qb.getMany();
+    const total = await qb.getCount();
+
+    const data = await qb.skip(offset).take(limit).getMany();
+
+    return {
+      data,
+      meta: {
+        total,
+        limit,
+        offset,
+      },
+    };
   }
 
   async findOne(id: string): Promise<Task> {
