@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable prettier/prettier */
+
 import {
   BadRequestException,
   Injectable,
@@ -49,8 +49,12 @@ export class AuthService {
     return this.signTokens(user);
   }
 
+  async logout(userId: string): Promise<void> {
+    await this.userRepo.update(userId, { refreshToken: null });
+  }
+
   async signTokens(user: { id: string; email: string; role: string }) {
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = { userId: user.id, email: user.email, role: user.role };
 
     const accessToken = await this.jwtService.signAsync(payload, {
       secret: this.config.get<string>('JWT_ACCESS_SECRET'),
@@ -62,9 +66,16 @@ export class AuthService {
       expiresIn: '7d',
     });
 
+    await this.updateRefreshToken(user.id, refreshToken);
+
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
     };
+  }
+
+  async updateRefreshToken(userId: string, refreshToken: string) {
+    const hashed = await bcrypt.hash(refreshToken, 10);
+    await this.userRepo.update(userId, { refreshToken: hashed });
   }
 }

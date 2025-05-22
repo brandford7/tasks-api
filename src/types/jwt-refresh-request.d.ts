@@ -5,4 +5,7 @@ import { UserPayload } from './user-payload.interface';
 
 export interface JwtRefreshRequest extends Request {
   user: UserPayload & { refreshToken: string };
+  body: {
+    refreshToken: string;
+  };
 }

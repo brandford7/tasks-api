@@ -1,7 +1,7 @@
 /* eslint-disable prettier/prettier */
 import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 
-export enum UserRole {
+enum UserRole {
   ADMIN = 'admin',
   USER = 'user',
 }

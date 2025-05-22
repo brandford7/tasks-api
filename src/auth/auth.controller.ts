@@ -4,10 +4,9 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { Request } from 'express';
 import { JwtRefreshRequest } from 'src/types/jwt-refresh-request';
-import { JwtAuthGuard } from './jwt-auth.guard';
 import { JwtRequest } from 'src/types/jwt-request.interface';
+
 
 @Controller('api/auth')
 export class AuthController {
@@ -23,7 +22,15 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(AuthGuard('jwt'))
+  @Post('logout')
+  async logout(@Req() req: JwtRequest) {
+    const { userId } = req.user;
+    await this.authService.logout(userId);
+    return { message: 'Successfully logged out' };
+  }
+
+  @UseGuards(AuthGuard('jwt'))
   @Get('me')
   getProfile(@Req() req: JwtRequest) {
     return req.user; // userId, email, role
@@ -31,7 +38,7 @@ export class AuthController {
 
   @UseGuards(AuthGuard('jwt-refresh'))
   @Post('refresh-token')
-  refreshToken(@Req() req: JwtRefreshRequest) {
+  refresh(@Req() req: JwtRefreshRequest) {
     return this.authService.signTokens({
       id: req.user.userId,
       email: req.user.email,

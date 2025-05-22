@@ -13,7 +13,7 @@ export class TasksService {
   constructor(
     @InjectRepository(Task) private taskRepo: Repository<Task>,
     @InjectRepository(User) private userRepo: Repository<User>,
-  ) {}
+  ) { }
 
   async create(dto: CreateTaskDto, userId: string): Promise<Task> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
@@ -25,8 +25,7 @@ export class TasksService {
     return this.taskRepo.save(task);
   }
 
-  // src/tasks/tasks.service.ts
-
+ 
   async findAll(
     user: { userId: string; role: string },
     query: TaskQueryDto,
@@ -104,5 +103,18 @@ export class TasksService {
   async remove(id: string): Promise<void> {
     const task = await this.findOne(id);
     await this.taskRepo.remove(task);
+    
+  }
+
+  // Soft delete
+  async softDelete(id: string): Promise<void> {
+    const task = await this.findOne(id);
+    await this.taskRepo.softRemove(task);
+  }
+
+  // Restore
+  async restore(id: string): Promise<void> {
+    await this.taskRepo.restore(id);
+
   }
 }

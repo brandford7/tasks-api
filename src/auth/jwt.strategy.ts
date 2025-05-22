@@ -1,10 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable prettier/prettier */
+
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
+import bcrypt from 'bcrypt'
+import { InjectRepository } from '@nestjs/typeorm';
+import {  User } from 'src/users/entities/user.entity';
+import { Repository } from 'typeorm';
+import { JwtRefreshRequest } from 'src/types/jwt-refresh-request';
+import { UserPayload } from 'src/types/user-payload.interface';
 
 // Strategy for Access Token
 @Injectable()
@@ -16,9 +21,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  validate(payload: any) {
+  validate(payload: UserPayload) {
     return {
-      userId: payload.sub,
+      userId: payload.userId,
       email: payload.email,
       role: payload.role,
     };
@@ -31,7 +36,7 @@ export class JwtRefreshStrategy extends PassportStrategy(
   Strategy,
   'jwt-refresh',
 ) {
-  constructor(private config: ConfigService) {
+  constructor(@InjectRepository(User) private userRepo: Repository<User>, private config: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromBodyField('refreshToken'), // Or fromCookie('refreshToken') if using cookies
       secretOrKey: process.env.JWT_REFRESH_SECRET as string,
@@ -39,17 +44,22 @@ export class JwtRefreshStrategy extends PassportStrategy(
     });
   }
 
-  validate(req: Request, payload: any) {
-    if (!req.body || typeof req.body !== 'object') {
-      throw new UnauthorizedException('Invalid request body');
+  // jwt-refresh.strategy.ts
+  async validate(req: JwtRefreshRequest, payload: UserPayload) {
+    const refreshToken = req.body['refreshToken'];
+    const user = await this.userRepo.findOne({ where: { id: payload.userId } });
+
+    if (!user || !user.refreshToken) {
+      throw new UnauthorizedException('Access Denied');
     }
 
-    const refreshToken = req.body['refreshToken'];
+    const isMatch = await bcrypt.compare(refreshToken, user.refreshToken);
+    if (!isMatch) throw new UnauthorizedException('Access Denied');
+
     return {
-      userId: payload.sub,
-      email: payload.email,
-      role: payload.role,
-      refreshToken,
+      userId: user.id,
+      email: user.email,
+      role: user.role,
     };
   }
 }

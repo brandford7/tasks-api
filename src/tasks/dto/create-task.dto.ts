@@ -8,6 +8,6 @@ export class CreateTaskDto {
   @IsOptional()
   isCompleted?: boolean;
 
-  @IsNotEmpty()
+  @IsOptional()
   userId: string;
 }

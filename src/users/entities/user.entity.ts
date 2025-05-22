@@ -2,7 +2,7 @@
 import { Task } from 'src/tasks/entities/task.entity';
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, /*OneToMany*/ } from 'typeorm';
 
-enum UserRole {
+export enum UserRole {
   ADMIN = 'admin',
   USER = 'user',
 }
@@ -23,6 +23,9 @@ export class User {
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.USER })
   role: UserRole;
+
+  @Column({type:'text', nullable: true })
+  refreshToken?: string | null;
 
   @OneToMany(() => Task, (task) => task.user)
   tasks: Task[];
