@@ -19,7 +19,10 @@ import { Task } from './entities/task.entity';
 import { TaskQueryDto } from './dto/task-query.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { TaskOwnershipGuard } from 'src/common/guards/task-ownership.guard';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Tasks')
+@ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'))
 @Controller('api/tasks')
 export class TasksController {
@@ -60,15 +63,21 @@ export class TasksController {
   deleteTask(@Param('id') id: string) {
     return this.tasksService.remove(id);
   }
-  @UseGuards(AuthGuard('jwt'), TaskOwnershipGuard)
-  @Delete(':id')
-  softDelete(@Param('id') id: string): Promise<void> {
-    return this.tasksService.softDelete(id);
+
+  @Delete(':id/soft')
+  softDeleteTask(
+    @Param('id') id: string,
+    @Req() req: JwtRequest,
+  ): Promise<void> {
+    const { userId } = req.user;
+    return this.tasksService.softDelete(id, userId);
   }
 
-  @UseGuards(AuthGuard('jwt'), TaskOwnershipGuard)
-  @Post(':id/restore')
-  restore(@Param('id') id: string): Promise<void> {
-    return this.tasksService.restore(id);
+  @Patch(':id/restore')
+  restoreTask(@Param('id') id: string, @Req() req: JwtRequest): Promise<void> {
+    const { userId } = req.user;
+    return this.tasksService.restore(id, userId);
   }
-}
+}  
+
+

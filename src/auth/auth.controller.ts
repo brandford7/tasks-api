@@ -6,8 +6,11 @@ import { LoginDto } from './dto/login.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { JwtRefreshRequest } from 'src/types/jwt-refresh-request';
 import { JwtRequest } from 'src/types/jwt-request.interface';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
 
+@ApiTags('Auth')
+@ApiBearerAuth()
 @Controller('api/auth')
 export class AuthController {
   constructor(private authService: AuthService) {}

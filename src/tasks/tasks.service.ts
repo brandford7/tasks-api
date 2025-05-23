@@ -13,7 +13,7 @@ export class TasksService {
   constructor(
     @InjectRepository(Task) private taskRepo: Repository<Task>,
     @InjectRepository(User) private userRepo: Repository<User>,
-  ) { }
+  ) {}
 
   async create(dto: CreateTaskDto, userId: string): Promise<Task> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
@@ -25,7 +25,6 @@ export class TasksService {
     return this.taskRepo.save(task);
   }
 
- 
   async findAll(
     user: { userId: string; role: string },
     query: TaskQueryDto,
@@ -103,18 +102,28 @@ export class TasksService {
   async remove(id: string): Promise<void> {
     const task = await this.findOne(id);
     await this.taskRepo.remove(task);
-    
   }
 
-  // Soft delete
-  async softDelete(id: string): Promise<void> {
-    const task = await this.findOne(id);
+  async softDelete(taskId: string, userId: string): Promise<void> {
+    const task = await this.taskRepo.findOne({
+      where: { id: taskId, user: { id: userId } },
+    });
+
+    if (!task) throw new NotFoundException('Task not found');
     await this.taskRepo.softRemove(task);
   }
 
-  // Restore
-  async restore(id: string): Promise<void> {
-    await this.taskRepo.restore(id);
+  // Restore a soft-deleted task
+  async restore(taskId: string, userId: string): Promise<void> {
+    const task = await this.taskRepo.findOne({
+      where: { id: taskId },
+      withDeleted: true, // Include soft-deleted tasks
+      relations: ['user'],
+    });
 
+    if (!task || task.user.id !== userId)
+      throw new NotFoundException('Task not found or access denied');
+
+    await this.taskRepo.restore(taskId);
   }
 }
