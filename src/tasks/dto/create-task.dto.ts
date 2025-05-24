@@ -11,7 +11,4 @@ export class CreateTaskDto {
   @IsOptional()
   isCompleted?: boolean;
 
-  @ApiProperty()
-  @IsOptional()
-  userId: string;
 }

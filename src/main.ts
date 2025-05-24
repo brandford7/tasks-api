@@ -4,6 +4,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { CustomExceptionsFilter } from './common/filters/http-exception.filter';
+import { TransformResponseInterceptor } from './common/interceptors/transform-response-interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -28,6 +30,11 @@ async function bootstrap() {
       transform: true, // transforms payload to DTO classes
     }),
   );
+
+  app.useGlobalInterceptors(new TransformResponseInterceptor());
+  app.useGlobalFilters(new CustomExceptionsFilter());
+
+  
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

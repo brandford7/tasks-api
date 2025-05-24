@@ -19,6 +19,8 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "strictPropertyInitialization": false,
-   
+    "paths": {
+      "src/*": ["src/*"]
+    }
   }
 }
